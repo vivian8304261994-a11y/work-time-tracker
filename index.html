@@ -662,68 +662,59 @@ function exportExcel(){
   const mn=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
   const monthName=mn[curMonth-1];
 
-  const bdr={top:{style:'thin',color:{rgb:'BBBBBB'}},bottom:{style:'thin',color:{rgb:'BBBBBB'}},left:{style:'thin',color:{rgb:'BBBBBB'}},right:{style:'thin',color:{rgb:'BBBBBB'}}};
-  const bdrOut={top:{style:'medium',color:{rgb:'7C4DFF'}},bottom:{style:'medium',color:{rgb:'7C4DFF'}},left:{style:'medium',color:{rgb:'7C4DFF'}},right:{style:'medium',color:{rgb:'7C4DFF'}}};
+  // 黑白極簡樣式
+  const thin={style:'thin',color:{rgb:'000000'}};
+  const med ={style:'medium',color:{rgb:'000000'}};
+  const bdrAll={top:thin,bottom:thin,left:thin,right:thin};
+  const bdrHead={top:med,bottom:med,left:med,right:med};
+  const bdrTot ={top:med, bottom:thin,left:thin,right:thin};
+  const none={patternType:'none'};
 
-  function cell(v,opts){
-    const s={
-      font:{name:'DFKai-SB',sz:opts.sz||11,bold:!!opts.bold,color:{rgb:opts.color||'333333'}},
-      alignment:{horizontal:opts.align||'center',vertical:'center',wrapText:false},
-      border:opts.outer?bdrOut:bdr,
-      fill:opts.bg?{fgColor:{rgb:opts.bg},patternType:'solid'}:{patternType:'none'}
-    };
-    const o={v,s,t:typeof v==='number'?'n':'s'};
-    if(opts.f){o.f=opts.f;delete o.v;}
-    return o;
+  function K(v,sz,bold,align,border){
+    return{v,t:typeof v==='number'?'n':'s',
+      s:{font:{name:'DFKai-SB',sz:sz||11,bold:!!bold},
+         alignment:{horizontal:align||'center',vertical:'center',wrapText:false},
+         border:border||bdrAll, fill:none}};
+  }
+  function Kf(f,sz,bold){
+    return{f,t:'n',
+      s:{font:{name:'DFKai-SB',sz:sz||11,bold:!!bold},
+         alignment:{horizontal:'center',vertical:'center'},
+         border:bdrTot, fill:none}};
   }
 
   const rows=[];
-  // Row 1: Title (merged A1:D1)
-  const tS={font:{name:'DFKai-SB',sz:16,bold:true,color:{rgb:'FFFFFF'}},
+  // 標題列 (合併 A1:D1)
+  const tS={font:{name:'DFKai-SB',sz:15,bold:true},
             alignment:{horizontal:'center',vertical:'center'},
-            fill:{fgColor:{rgb:'7C4DFF'},patternType:'solid'},
-            border:bdrOut};
+            border:bdrHead, fill:none};
   rows.push([{v:`${curYear}年${monthName} 工單`,s:tS,t:'s'},{v:'',s:tS,t:'s'},{v:'',s:tS,t:'s'},{v:'',s:tS,t:'s'}]);
-  // Row 2: Column headers
-  rows.push([
-    cell('日',  {bold:true,sz:12,bg:'EDE7F6',color:'5E35B1',outer:true}),
-    cell('地點',{bold:true,sz:12,bg:'EDE7F6',color:'5E35B1',align:'left',outer:true}),
-    cell('傑',  {bold:true,sz:14,bg:'EDE7F6',color:'5E35B1',outer:true}),
-    cell('峰',  {bold:true,sz:14,bg:'EDE7F6',color:'5E35B1',outer:true})
-  ]);
-  // Rows 3 ~ days+2: Data
+  // 欄位標題
+  rows.push([K('日',12,true,'center',bdrHead), K('地點',12,true,'left',bdrHead), K('傑',13,true,'center',bdrHead), K('峰',13,true,'center',bdrHead)]);
+  // 資料列
   for(let d=1;d<=days;d++){
     const r=byDay[d];
     const j=r?(parseFloat(r.jieHours)||''):'';
     const f=r?(parseFloat(r.fengHours)||''):'';
     const loc=r?(r.location||''):'';
-    const bg=(r&&(r.location==='請假'||r.location==='沒叫'))?'FFF8F0':'FFFFFF';
-    rows.push([
-      cell(d,  {sz:11,bg}),
-      cell(loc,{sz:11,bg,align:'left'}),
-      cell(j===''?'':j, {sz:11,bg}),
-      cell(f===''?'':f, {sz:11,bg})
-    ]);
+    rows.push([K(d,11,false,'center'), K(loc,11,false,'left'), K(j===''?'':j,11), K(f===''?'':f,11)]);
   }
-  // Last row: 總計
+  // 總計列
   const last=days+2;
-  rows.push([
-    cell('',    {outer:true,bg:'FFF0F0'}),
-    cell('總計',{bold:true,sz:12,color:'C0392B',align:'center',outer:true,bg:'FFF0F0'}),
-    {f:`SUM(C3:C${last})`,s:{font:{name:'DFKai-SB',sz:12,bold:true,color:{rgb:'C0392B'}},alignment:{horizontal:'center',vertical:'center'},border:bdrOut,fill:{fgColor:{rgb:'FFF0F0'},patternType:'solid'}},t:'n'},
-    {f:`SUM(D3:D${last})`,s:{font:{name:'DFKai-SB',sz:12,bold:true,color:{rgb:'C0392B'}},alignment:{horizontal:'center',vertical:'center'},border:bdrOut,fill:{fgColor:{rgb:'FFF0F0'},patternType:'solid'}},t:'n'}
-  ]);
+  rows.push([K('',11,false,'center',bdrTot), K('總計',12,true,'center',bdrTot), Kf(`SUM(C3:C${last})`,12,true), Kf(`SUM(D3:D${last})`,12,true)]);
 
   const ws=XLSX.utils.aoa_to_sheet(rows);
   ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:3}}];
-  ws['!cols']=[{wch:5},{wch:26},{wch:9},{wch:9}];
-  const rowH=[{hpx:34},{hpx:26}];
-  for(let i=0;i<days;i++) rowH.push({hpx:18});
+  // 欄寬：A小、B最寬、C/D窄
+  ws['!cols']=[{wch:5},{wch:42},{wch:8},{wch:8}];
+  // 列高：標題高一些，資料列統一
+  const rowH=[{hpx:32},{hpx:24}];
+  for(let i=0;i<days;i++) rowH.push({hpx:17});
   rowH.push({hpx:22});
   ws['!rows']=rowH;
-  // A4 一頁列印
-  ws['!pageSetup']={paperSize:9,orientation:'portrait',fitToPage:1,fitToWidth:1,fitToHeight:1};
-  ws['!margins']={left:0.5,right:0.5,top:0.6,bottom:0.6,header:0,footer:0};
+  // A4直向，縮放至單頁
+  ws['!pageSetup']={paperSize:9,orientation:'portrait',scale:100,fitToPage:1,fitToWidth:1,fitToHeight:1};
+  ws['!margins']={left:0.39,right:0.39,top:0.55,bottom:0.55,header:0.2,footer:0.2};
 
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,`${curYear}年${monthName}`);
