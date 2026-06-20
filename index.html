@@ -660,52 +660,74 @@ function exportExcel(){
   const byDay={};recs.forEach(r=>{byDay[r.day]=r;});
   const days=daysInMonth(curYear,curMonth);
   const mn=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  const monthName=mn[curMonth-1];
+
+  const bdr={top:{style:'thin',color:{rgb:'BBBBBB'}},bottom:{style:'thin',color:{rgb:'BBBBBB'}},left:{style:'thin',color:{rgb:'BBBBBB'}},right:{style:'thin',color:{rgb:'BBBBBB'}}};
+  const bdrOut={top:{style:'medium',color:{rgb:'7C4DFF'}},bottom:{style:'medium',color:{rgb:'7C4DFF'}},left:{style:'medium',color:{rgb:'7C4DFF'}},right:{style:'medium',color:{rgb:'7C4DFF'}}};
+
+  function cell(v,opts){
+    const s={
+      font:{name:'DFKai-SB',sz:opts.sz||11,bold:!!opts.bold,color:{rgb:opts.color||'333333'}},
+      alignment:{horizontal:opts.align||'center',vertical:'center',wrapText:false},
+      border:opts.outer?bdrOut:bdr,
+      fill:opts.bg?{fgColor:{rgb:opts.bg},patternType:'solid'}:{patternType:'none'}
+    };
+    const o={v,s,t:typeof v==='number'?'n':'s'};
+    if(opts.f){o.f=opts.f;delete o.v;}
+    return o;
+  }
 
   const rows=[];
-  // Title row
-  const titleStyle={font:{name:'DFKai-SB',sz:16,bold:true,color:{rgb:'4A2FBD'}},alignment:{horizontal:'center',vertical:'center'}};
+  // Row 1: Title (merged A1:D1)
+  const tS={font:{name:'DFKai-SB',sz:16,bold:true,color:{rgb:'FFFFFF'}},
+            alignment:{horizontal:'center',vertical:'center'},
+            fill:{fgColor:{rgb:'7C4DFF'},patternType:'solid'},
+            border:bdrOut};
+  rows.push([{v:`${curYear}年${monthName} 工單`,s:tS,t:'s'},{v:'',s:tS,t:'s'},{v:'',s:tS,t:'s'},{v:'',s:tS,t:'s'}]);
+  // Row 2: Column headers
   rows.push([
-    {v:`${curYear}年${mn[curMonth-1]} 工時記錄`,s:titleStyle},
-    {v:'',s:titleStyle},{v:'',s:titleStyle},{v:'',s:titleStyle}
+    cell('日',  {bold:true,sz:12,bg:'EDE7F6',color:'5E35B1',outer:true}),
+    cell('地點',{bold:true,sz:12,bg:'EDE7F6',color:'5E35B1',align:'left',outer:true}),
+    cell('傑',  {bold:true,sz:14,bg:'EDE7F6',color:'5E35B1',outer:true}),
+    cell('峰',  {bold:true,sz:14,bg:'EDE7F6',color:'5E35B1',outer:true})
   ]);
-  // Column header row
-  rows.push([
-    {v:'日',s:cs({bold:true,sz:12,outer:true,bg:'EDE7F6'})},
-    {v:'地點',s:cs({bold:true,sz:12,align:'left',outer:true,bg:'EDE7F6'})},
-    {v:'傑',s:cs({sz:16,bold:true,outer:true,bg:'EDE7F6'})},
-    {v:'峰',s:cs({sz:16,bold:true,outer:true,bg:'EDE7F6'})}
-  ]);
-  // Day rows
+  // Rows 3 ~ days+2: Data
   for(let d=1;d<=days;d++){
     const r=byDay[d];
     const j=r?(parseFloat(r.jieHours)||''):'';
     const f=r?(parseFloat(r.fengHours)||''):'';
     const loc=r?(r.location||''):'';
+    const bg=(r&&(r.location==='請假'||r.location==='沒叫'))?'FFF8F0':'FFFFFF';
     rows.push([
-      {v:d,  s:cs()},
-      {v:loc,s:cs({align:'left'})},
-      {v:j,  s:cs()},
-      {v:f,  s:cs()}
+      cell(d,  {sz:11,bg}),
+      cell(loc,{sz:11,bg,align:'left'}),
+      cell(j===''?'':j, {sz:11,bg}),
+      cell(f===''?'':f, {sz:11,bg})
     ]);
   }
-  // 總計 row (now offset by 2 header rows)
-  const lastDataRow=days+2;
+  // Last row: 總計
+  const last=days+2;
   rows.push([
-    {v:'',s:cs({outer:true})},
-    {v:'總計',s:cs({bold:true,sz:14,color:'C0392B',align:'center',outer:true,bg:'FFF3F3'})},
-    {f:`SUM(C3:C${lastDataRow})`,s:cs({bold:true,outer:true,bg:'FFF3F3'})},
-    {f:`SUM(D3:D${lastDataRow})`,s:cs({bold:true,outer:true,bg:'FFF3F3'})}
+    cell('',    {outer:true,bg:'FFF0F0'}),
+    cell('總計',{bold:true,sz:12,color:'C0392B',align:'center',outer:true,bg:'FFF0F0'}),
+    {f:`SUM(C3:C${last})`,s:{font:{name:'DFKai-SB',sz:12,bold:true,color:{rgb:'C0392B'}},alignment:{horizontal:'center',vertical:'center'},border:bdrOut,fill:{fgColor:{rgb:'FFF0F0'},patternType:'solid'}},t:'n'},
+    {f:`SUM(D3:D${last})`,s:{font:{name:'DFKai-SB',sz:12,bold:true,color:{rgb:'C0392B'}},alignment:{horizontal:'center',vertical:'center'},border:bdrOut,fill:{fgColor:{rgb:'FFF0F0'},patternType:'solid'}},t:'n'}
   ]);
 
   const ws=XLSX.utils.aoa_to_sheet(rows);
   ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:3}}];
-  ws['!cols']=[{wch:6},{wch:38},{wch:10},{wch:10}];
-  ws['!rows']=[{hpx:36},{hpx:30}];
-  for(let i=0;i<=days;i++) ws['!rows'].push({hpx:22});
+  ws['!cols']=[{wch:5},{wch:26},{wch:9},{wch:9}];
+  const rowH=[{hpx:34},{hpx:26}];
+  for(let i=0;i<days;i++) rowH.push({hpx:18});
+  rowH.push({hpx:22});
+  ws['!rows']=rowH;
+  // A4 一頁列印
+  ws['!pageSetup']={paperSize:9,orientation:'portrait',fitToPage:1,fitToWidth:1,fitToHeight:1};
+  ws['!margins']={left:0.5,right:0.5,top:0.6,bottom:0.6,header:0,footer:0};
 
   const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,`${curYear}年${mn[curMonth-1]}`);
-  XLSX.writeFile(wb,`${curYear}年${mn[curMonth-1]}記錄表.xlsx`);
+  XLSX.utils.book_append_sheet(wb,ws,`${curYear}年${monthName}`);
+  XLSX.writeFile(wb,`${curYear}年${monthName} 工單.xlsx`);
   showToast('📥 Excel 已下載！');
 }
 
