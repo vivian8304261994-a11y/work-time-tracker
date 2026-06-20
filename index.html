@@ -6,6 +6,8 @@
 <title>工時記錄 ✨</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{
@@ -390,12 +392,30 @@ table.monthly .total-label{color:#c0392b;font-weight:900}
 <div class="toast" id="toast"></div>
 
 <script>
-const KEY='worklog_v1';
+// ── Firebase 設定 ──
+firebase.initializeApp({
+  apiKey:"AIzaSyDz-rAAPAMkJH8LdMX_BctATP-Ag3EL5uE",
+  authDomain:"work-time-tracker-bebd3.firebaseapp.com",
+  databaseURL:"https://work-time-tracker-bebd3-default-rtdb.firebaseio.com",
+  projectId:"work-time-tracker-bebd3",
+  storageBucket:"work-time-tracker-bebd3.firebasestorage.app",
+  messagingSenderId:"480313572562",
+  appId:"1:480313572562:web:86ef1a25d952701ede810b"
+});
+const dbRef = firebase.database().ref('worklog');
+
 const S_YEAR=2026,S_MONTH=6;
 let curYear=S_YEAR,curMonth=S_MONTH,editingId=null;
+let localData=[];
 
-function getData(){try{return JSON.parse(localStorage.getItem(KEY)||'[]');}catch{return[];}}
-function setData(d){localStorage.setItem(KEY,JSON.stringify(d));}
+// 即時同步監聽
+dbRef.on('value', snap=>{
+  const val=snap.val();
+  localData=val?Object.values(val):[];
+  renderAll();
+});
+
+function getData(){return localData;}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2);}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function daysInMonth(y,m){return new Date(y,m,0).getDate();}
@@ -446,17 +466,15 @@ function emoji(loc){
 
 function quickSave(status){
   const day=+document.getElementById('inputDay').value;
-  const data=getData();
-  const ex=data.find(r=>r.year===curYear&&r.month===curMonth&&r.day===day);
+  const ex=localData.find(r=>r.year===curYear&&r.month===curMonth&&r.day===day);
   if(ex){
     if(!confirm(`${day} 日已有記錄，要改成「${status}」嗎？`))return;
-    data[data.indexOf(ex)]={...ex,location:status,jieHours:'',fengHours:''};
+    dbRef.child(ex.id).update({location:status,jieHours:'',fengHours:''});
   }else{
-    data.push({id:uid(),year:curYear,month:curMonth,day,location:status,jieHours:'',fengHours:''});
+    const id=uid();
+    dbRef.child(id).set({id,year:curYear,month:curMonth,day,location:status,jieHours:'',fengHours:''});
   }
-  setData(data);
   showToast(status==='請假'?'🌴 已記錄請假！':'😴 已記錄沒叫！');
-  renderAll();
 }
 
 function renderList(){
@@ -512,22 +530,21 @@ function saveRecord(e){
   const jie=document.getElementById('inputJie').value;
   const feng=document.getElementById('inputFeng').value;
   if(!loc&&!jie&&!feng){alert('請填入地點或時數 😊');return;}
-  const data=getData();
   if(editingId){
-    const i=data.findIndex(r=>r.id===editingId);
-    if(i>=0)data[i]={...data[i],day,location:loc,jieHours:jie,fengHours:feng};
+    dbRef.child(editingId).update({day,location:loc,jieHours:jie,fengHours:feng});
     editingId=null;showToast('✅ 已儲存！');
   }else{
-    const ex=data.find(r=>r.year===curYear&&r.month===curMonth&&r.day===day);
+    const ex=localData.find(r=>r.year===curYear&&r.month===curMonth&&r.day===day);
     if(ex){
       if(!confirm(`${day} 日已有記錄，要覆蓋嗎？`))return;
-      data[data.indexOf(ex)]={...ex,location:loc,jieHours:jie,fengHours:feng};
+      dbRef.child(ex.id).update({location:loc,jieHours:jie,fengHours:feng});
     }else{
-      data.push({id:uid(),year:curYear,month:curMonth,day,location:loc,jieHours:jie,fengHours:feng});
+      const id=uid();
+      dbRef.child(id).set({id,year:curYear,month:curMonth,day,location:loc,jieHours:jie,fengHours:feng});
     }
     showToast('🎉 新增成功！');
   }
-  setData(data);resetForm();renderAll();
+  resetForm();
 }
 
 function startEdit(id){
@@ -552,9 +569,9 @@ function cancelEdit(){editingId=null;resetForm();}
 
 function delRecord(id){
   if(!confirm('確定要刪除這筆記錄嗎？ 🥺'))return;
-  setData(getData().filter(r=>r.id!==id));
+  dbRef.child(id).remove();
   if(editingId===id)resetForm();
-  showToast('🗑️ 已刪除');renderAll();
+  showToast('🗑️ 已刪除');
 }
 
 function resetForm(){
