@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>薪水計算 💰</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Nunito','微軟正黑體',sans-serif;
+  min-height:100vh;
+  background:linear-gradient(160deg,#fce4ec 0%,#ede7f6 50%,#e0f2f1 100%);
+  padding-bottom:60px;
+}
+
+/* ── Header ── */
+.header{
+  background:linear-gradient(135deg,#ff6b9d 0%,#c44dff 60%,#7c4dff 100%);
+  padding:28px 20px 22px;
+  text-align:center;
+  border-radius:0 0 32px 32px;
+  box-shadow:0 6px 24px rgba(124,77,255,.3);
+  position:relative;overflow:hidden;
+}
+.header::before{content:'💰';position:absolute;top:12px;left:20px;font-size:1.4rem;opacity:.5}
+.header::after{content:'✨';position:absolute;top:14px;right:24px;font-size:1rem;opacity:.4}
+.header h1{color:#fff;font-size:1.65rem;font-weight:900;letter-spacing:2px}
+.header p{color:rgba(255,255,255,.82);font-size:.85rem;margin-top:5px;font-weight:600}
+.header-back{
+  position:absolute;left:14px;bottom:16px;
+  background:rgba(255,255,255,.2);border:none;color:#fff;
+  border-radius:20px;padding:5px 14px;font-size:.82rem;font-weight:800;
+  cursor:pointer;font-family:inherit;text-decoration:none;
+  display:inline-flex;align-items:center;gap:4px;
+  transition:background .2s;
+}
+.header-back:hover{background:rgba(255,255,255,.35)}
+
+/* ── Month nav ── */
+.month-wrap{padding:14px 16px 0}
+.month-nav{
+  display:flex;align-items:center;justify-content:center;gap:14px;
+  background:#fff;border-radius:18px;padding:12px 18px;
+  box-shadow:0 3px 14px rgba(0,0,0,.07);
+}
+.month-nav button{
+  background:#f3f0ff;border:none;color:#7c4dff;
+  width:38px;height:38px;border-radius:50%;
+  font-size:1rem;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .2s;font-weight:800;flex-shrink:0;
+}
+.month-nav button:hover{background:#7c4dff;color:#fff;transform:scale(1.05)}
+.month-nav button:disabled{opacity:.35;cursor:default;transform:none}
+.month-label{font-size:1.25rem;font-weight:900;color:#4a2fbd;min-width:130px;text-align:center}
+
+/* ── Content ── */
+.content{padding:14px 14px 0;max-width:540px;margin:0 auto}
+
+/* ── Card ── */
+.card{
+  background:#fff;border-radius:22px;padding:20px;
+  box-shadow:0 3px 18px rgba(0,0,0,.07);
+  margin-bottom:14px;
+}
+.card-title{
+  font-size:1.05rem;font-weight:900;color:#7c4dff;
+  margin-bottom:16px;display:flex;align-items:center;gap:7px;
+}
+
+/* ── Rate card ── */
+.rate-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.rate-label{font-size:.9rem;font-weight:800;color:#888;white-space:nowrap}
+.rate-input-wrap{display:flex;align-items:center;gap:6px;flex:1;min-width:160px}
+.rate-input{
+  border:2px solid #f0eeff;border-radius:14px;
+  padding:10px 14px;font-size:1.1rem;font-weight:800;
+  color:#7c4dff;font-family:inherit;width:110px;
+  background:#faf9ff;transition:border-color .2s;text-align:center;
+}
+.rate-input:focus{outline:none;border-color:#c44dff;background:#fff}
+.rate-unit{font-size:.9rem;font-weight:800;color:#aaa}
+.rate-hint{font-size:.78rem;color:#bbb;font-weight:600;margin-top:8px}
+
+/* ── Salary summary ── */
+.salary-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.salary-card{border-radius:18px;padding:18px 14px;text-align:center;position:relative;overflow:hidden}
+.salary-card.jie{background:linear-gradient(135deg,#f3e8ff,#e8d5ff)}
+.salary-card.feng{background:linear-gradient(135deg,#dbeeff,#c5e6ff)}
+.salary-name{font-size:.8rem;font-weight:900;letter-spacing:1px;margin-bottom:6px}
+.salary-name.jie{color:#7c4dff}
+.salary-name.feng{color:#0288d1}
+.salary-hours{font-size:.85rem;font-weight:700;color:#888;margin-bottom:4px}
+.salary-amount{font-size:1.5rem;font-weight:900;line-height:1.1}
+.salary-amount.jie{color:#7c4dff}
+.salary-amount.feng{color:#0288d1}
+.salary-unit{font-size:.75rem;font-weight:700;color:#aaa;margin-top:2px}
+
+.total-card{
+  background:linear-gradient(135deg,#ff6b9d 0%,#c44dff 100%);
+  border-radius:18px;padding:18px 20px;
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:12px;
+}
+.total-label{color:rgba(255,255,255,.85);font-size:.9rem;font-weight:800}
+.total-amount{color:#fff;font-size:1.8rem;font-weight:900}
+.total-detail{color:rgba(255,255,255,.7);font-size:.78rem;font-weight:600;margin-top:2px}
+
+/* ── Daily table ── */
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table.daily{width:100%;border-collapse:collapse;font-size:.88rem}
+table.daily th{
+  background:#f7f4ff;color:#9480e0;font-weight:900;
+  padding:9px 8px;text-align:center;border-bottom:2px solid #ede8ff;
+}
+table.daily td{
+  padding:8px 8px;text-align:center;border-bottom:1px solid #f5f5f5;
+  color:#555;
+}
+table.daily tr:last-child td{border-bottom:none}
+table.daily tr.leave-row td{color:#bbb;font-style:italic}
+table.daily tr.total-row td{
+  font-weight:900;color:#7c4dff;background:#f7f4ff;
+  border-top:2px solid #ede8ff;border-bottom:none;
+}
+.tag{display:inline-block;border-radius:20px;padding:2px 10px;font-size:.75rem;font-weight:800}
+.tag-leave{background:#fff3e0;color:#f57c00}
+.tag-nocall{background:#f3e5f5;color:#8e24aa}
+
+/* ── Action buttons ── */
+.action-btns{
+  display:flex;gap:10px;flex-wrap:wrap;
+  max-width:540px;margin:0 auto;padding:0 14px;
+}
+.btn-excel{
+  flex:1;min-width:140px;
+  background:linear-gradient(135deg,#43e97b,#38f9d7);
+  border:none;color:#fff;border-radius:18px;
+  padding:15px;font-size:1rem;font-weight:900;
+  cursor:pointer;font-family:inherit;
+  box-shadow:0 4px 16px rgba(67,233,123,.35);
+  transition:transform .15s,box-shadow .15s;
+}
+.btn-excel:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(67,233,123,.5)}
+.btn-excel:active{transform:translateY(0)}
+
+/* ── Toast ── */
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:#333;color:#fff;border-radius:20px;padding:11px 22px;
+  font-size:.9rem;font-weight:700;opacity:0;transition:all .3s;pointer-events:none;
+  white-space:nowrap;z-index:999;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── Empty ── */
+.empty{text-align:center;padding:36px 20px;color:#ccc}
+.empty-icon{font-size:2.5rem;margin-bottom:10px}
+.empty p{font-weight:700;line-height:1.6}
+
+/* ── Loading ── */
+.loading{text-align:center;padding:30px;color:#c4b5ff;font-weight:800;font-size:.9rem}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <a href="index.html" class="header-back">← 工時記錄</a>
+  <h1>薪水計算 💰</h1>
+  <p>傑 & 峰 每月薪資試算</p>
+</div>
+
+<div class="month-wrap">
+  <div class="month-nav">
+    <button onclick="changeMonth(-1)" id="btnPrev">◀</button>
+    <div class="month-label" id="monthLabel"></div>
+    <button onclick="changeMonth(1)" id="btnNext">▶</button>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- 時薪設定 -->
+  <div class="card">
+    <div class="card-title">⚙️ 時薪設定</div>
+    <div class="rate-row">
+      <span class="rate-label">每小時</span>
+      <div class="rate-input-wrap">
+        <input class="rate-input" type="number" id="rateInput" value="225" min="1" step="0.5" oninput="saveRate()">
+        <span class="rate-unit">元</span>
+      </div>
+    </div>
+    <div class="rate-hint">💡 修改時薪後自動更新計算結果</div>
+  </div>
+
+  <!-- 薪資摘要 -->
+  <div id="salarySection">
+    <div class="loading">⏳ 載入中…</div>
+  </div>
+
+</div>
+
+<div class="action-btns">
+  <button class="btn-excel" onclick="exportExcel()">📥 下載薪資 Excel</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+firebase.initializeApp({
+  apiKey:"AIzaSyDz-rAAPAMkJH8LdMX_BctATP-Ag3EL5uE",
+  authDomain:"work-time-tracker-bebd3.firebaseapp.com",
+  databaseURL:"https://work-time-tracker-bebd3-default-rtdb.firebaseio.com",
+  projectId:"work-time-tracker-bebd3",
+  storageBucket:"work-time-tracker-bebd3.firebasestorage.app",
+  messagingSenderId:"480313572562",
+  appId:"1:480313572562:web:86ef1a25d952701ede810b"
+});
+const dbRef = firebase.database().ref('worklog');
+
+const S_YEAR=2026, S_MONTH=6;
+let curYear=S_YEAR, curMonth=S_MONTH;
+let localData=[];
+
+// 載入時薪
+const rateInput = document.getElementById('rateInput');
+rateInput.value = localStorage.getItem('salaryRate') || '225';
+
+function saveRate(){
+  localStorage.setItem('salaryRate', rateInput.value);
+  renderSalary();
+}
+
+function getRate(){ return parseFloat(rateInput.value)||0; }
+
+dbRef.on('value', snap=>{
+  const val=snap.val();
+  localData=val?Object.values(val):[];
+  renderSalary();
+});
+
+function daysInMonth(y,m){ return new Date(y,m,0).getDate(); }
+
+function changeMonth(d){
+  let m=curMonth+d, y=curYear;
+  if(m>12){m=1;y++;} if(m<1){m=12;y--;}
+  if(y<S_YEAR||(y===S_YEAR&&m<S_MONTH))return;
+  curMonth=m; curYear=y;
+  renderSalary();
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+function fmt(n){ return n%1?n.toFixed(1):String(n); }
+function fmtMoney(n){
+  return n.toLocaleString('zh-TW', {minimumFractionDigits: n%1?1:0, maximumFractionDigits:1});
+}
+
+function tagLoc(loc){
+  if(!loc) return '';
+  if(loc==='請假') return '<span class="tag tag-leave">🌴 請假</span>';
+  if(loc==='沒叫') return '<span class="tag tag-nocall">😴 沒叫</span>';
+  return loc;
+}
+
+function renderSalary(){
+  const now=new Date();
+  const label=`${curYear} 年 ${curMonth} 月`;
+  document.getElementById('monthLabel').textContent=label;
+  document.getElementById('btnPrev').disabled=(curYear===S_YEAR&&curMonth===S_MONTH);
+  document.getElementById('btnNext').disabled=(curYear>now.getFullYear()||(curYear===now.getFullYear()&&curMonth>=now.getMonth()+1));
+
+  const recs = localData.filter(r=>r.year===curYear&&r.month===curMonth).sort((a,b)=>a.day-b.day);
+  const rate = getRate();
+
+  let jieH=0, fengH=0;
+  recs.forEach(r=>{ jieH+=parseFloat(r.jieHours)||0; fengH+=parseFloat(r.fengHours)||0; });
+
+  const jiePay = jieH*rate;
+  const fengPay = fengH*rate;
+  const totalPay = jiePay+fengPay;
+
+  const days = daysInMonth(curYear, curMonth);
+  // Build day map
+  const dayMap={};
+  recs.forEach(r=>{ dayMap[r.day]=r; });
+
+  if(!recs.length){
+    document.getElementById('salarySection').innerHTML=`
+      <div class="card">
+        <div class="empty"><div class="empty-icon">🌸</div><p>這個月還沒有記錄<br>請先在工時記錄頁新增資料</p></div>
+      </div>`;
+    return;
+  }
+
+  let tableRows='';
+  for(let d=1;d<=days;d++){
+    const r=dayMap[d];
+    if(!r) continue;
+    const isLeave=(r.location==='請假'||r.location==='沒叫');
+    const jh=parseFloat(r.jieHours)||0;
+    const fh=parseFloat(r.fengHours)||0;
+    const jp=jh*rate;
+    const fp=fh*rate;
+    tableRows+=`<tr class="${isLeave?'leave-row':''}">
+      <td style="font-weight:800;color:#9480e0">${d}</td>
+      <td>${tagLoc(r.location)}</td>
+      <td>${jh?fmt(jh):'—'}</td>
+      <td>${fh?fmt(fh):'—'}</td>
+      <td style="color:#7c4dff;font-weight:700">${jh?'$'+fmtMoney(jp):'—'}</td>
+      <td style="color:#0288d1;font-weight:700">${fh?'$'+fmtMoney(fp):'—'}</td>
+    </tr>`;
+  }
+
+  document.getElementById('salarySection').innerHTML=`
+    <div class="salary-grid">
+      <div class="salary-card jie">
+        <div class="salary-name jie">傑</div>
+        <div class="salary-hours">${fmt(jieH)} 小時</div>
+        <div class="salary-amount jie">$${fmtMoney(jiePay)}</div>
+        <div class="salary-unit">元</div>
+      </div>
+      <div class="salary-card feng">
+        <div class="salary-name feng">峰</div>
+        <div class="salary-hours">${fmt(fengH)} 小時</div>
+        <div class="salary-amount feng">$${fmtMoney(fengPay)}</div>
+        <div class="salary-unit">元</div>
+      </div>
+    </div>
+
+    <div class="total-card">
+      <div>
+        <div class="total-label">本月合計薪資</div>
+        <div class="total-detail">傑 ${fmt(jieH)}h + 峰 ${fmt(fengH)}h = ${fmt(jieH+fengH)}h × $${fmt(rate)}</div>
+      </div>
+      <div class="total-amount">$${fmtMoney(totalPay)}</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📋 明細</div>
+      <div class="table-wrap">
+        <table class="daily">
+          <thead>
+            <tr>
+              <th>日</th>
+              <th>地點</th>
+              <th>傑(h)</th>
+              <th>峰(h)</th>
+              <th style="color:#7c4dff">傑薪資</th>
+              <th style="color:#0288d1">峰薪資</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRows}
+            <tr class="total-row">
+              <td colspan="2">合計</td>
+              <td>${fmt(jieH)}</td>
+              <td>${fmt(fengH)}</td>
+              <td>$${fmtMoney(jiePay)}</td>
+              <td>$${fmtMoney(fengPay)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+function exportExcel(){
+  const rate=getRate();
+  const recs=localData.filter(r=>r.year===curYear&&r.month===curMonth).sort((a,b)=>a.day-b.day);
+  if(!recs.length){ showToast('⚠️ 沒有資料可以匯出'); return; }
+
+  const days=daysInMonth(curYear,curMonth);
+  const dayMap={};
+  recs.forEach(r=>{ dayMap[r.day]=r; });
+
+  const wb=XLSX.utils.book_new();
+  const ws={};
+
+  const hStyle={
+    font:{name:'DFKai-SB',bold:true,sz:12,color:{rgb:'FFFFFF'}},
+    fill:{fgColor:{rgb:'7C4DFF'}},
+    alignment:{horizontal:'center',vertical:'center'},
+    border:{top:{style:'thin',color:{rgb:'BBBBBB'}},bottom:{style:'thin',color:{rgb:'BBBBBB'}},
+            left:{style:'thin',color:{rgb:'BBBBBB'}},right:{style:'thin',color:{rgb:'BBBBBB'}}}
+  };
+  const cellStyle={
+    font:{name:'DFKai-SB',sz:11},
+    alignment:{horizontal:'center',vertical:'center'},
+    border:{top:{style:'thin',color:{rgb:'EEEEEE'}},bottom:{style:'thin',color:{rgb:'EEEEEE'}},
+            left:{style:'thin',color:{rgb:'EEEEEE'}},right:{style:'thin',color:{rgb:'EEEEEE'}}}
+  };
+  const totalStyle={
+    font:{name:'DFKai-SB',bold:true,sz:12},
+    fill:{fgColor:{rgb:'F3E8FF'}},
+    alignment:{horizontal:'center',vertical:'center'},
+    border:{top:{style:'medium',color:{rgb:'7C4DFF'}},bottom:{style:'thin',color:{rgb:'BBBBBB'}},
+            left:{style:'thin',color:{rgb:'BBBBBB'}},right:{style:'thin',color:{rgb:'BBBBBB'}}}
+  };
+  const moneyStyle={
+    font:{name:'DFKai-SB',bold:true,sz:12,color:{rgb:'7C4DFF'}},
+    fill:{fgColor:{rgb:'F3E8FF'}},
+    alignment:{horizontal:'center',vertical:'center'},
+    border:{top:{style:'medium',color:{rgb:'7C4DFF'}},bottom:{style:'thin',color:{rgb:'BBBBBB'}},
+            left:{style:'thin',color:{rgb:'BBBBBB'}},right:{style:'thin',color:{rgb:'BBBBBB'}}}
+  };
+
+  function c(r,col){ return XLSX.utils.encode_cell({r,c:col}); }
+  function setCell(ref,v,s){ ws[ref]={v,s,t:typeof v==='number'?'n':'s'}; }
+
+  // Title row
+  ws['A1']={v:`${curYear}年${curMonth}月 薪資計算`,s:{font:{name:'DFKai-SB',bold:true,sz:14},alignment:{horizontal:'center'}},t:'s'};
+  ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:5}}];
+
+  // Subtitle
+  ws['A2']={v:`時薪：$${rate} 元`,s:{font:{name:'DFKai-SB',sz:11,color:{rgb:'888888'}},alignment:{horizontal:'center'}},t:'s'};
+  ws['!merges'].push({s:{r:1,c:0},e:{r:1,c:5}});
+
+  // Empty row 3 (row index 2)
+
+  // Headers row 4 (index 3)
+  ['日期','地點','傑(小時)','峰(小時)','傑薪資','峰薪資'].forEach((h,i)=>{
+    setCell(c(3,i), h, hStyle);
+  });
+
+  // Data rows starting row 5 (index 4)
+  let row=4;
+  let jieH=0, fengH=0;
+  for(let d=1;d<=days;d++){
+    const rec=dayMap[d];
+    if(!rec) continue;
+    const jh=parseFloat(rec.jieHours)||0;
+    const fh=parseFloat(rec.fengHours)||0;
+    jieH+=jh; fengH+=fh;
+    const jp=jh*rate;
+    const fp=fh*rate;
+    setCell(c(row,0), d, cellStyle);
+    setCell(c(row,1), rec.location||'', cellStyle);
+    setCell(c(row,2), jh||'', cellStyle);
+    setCell(c(row,3), fh||'', cellStyle);
+    setCell(c(row,4), jh?jp:'', cellStyle);
+    setCell(c(row,5), fh?fp:'', cellStyle);
+    row++;
+  }
+
+  // Total hours row
+  setCell(c(row,0), '合計', totalStyle);
+  setCell(c(row,1), '', totalStyle);
+  setCell(c(row,2), jieH, totalStyle);
+  setCell(c(row,3), fengH, totalStyle);
+  setCell(c(row,4), '', totalStyle);
+  setCell(c(row,5), '', totalStyle);
+  row++;
+
+  // Salary row
+  setCell(c(row,0), '薪資', moneyStyle);
+  setCell(c(row,1), `時薪 $${rate}`, moneyStyle);
+  setCell(c(row,2), jieH*rate, moneyStyle);
+  setCell(c(row,3), fengH*rate, moneyStyle);
+  setCell(c(row,4), (jieH+fengH)*rate, {...moneyStyle, font:{...moneyStyle.font,color:{rgb:'C44DFF'}}});
+  setCell(c(row,5), '', moneyStyle);
+
+  ws['!ref']=XLSX.utils.encode_range({s:{r:0,c:0},e:{r:row,c:5}});
+  ws['!cols']=[{wch:8},{wch:18},{wch:10},{wch:10},{wch:12},{wch:12}];
+
+  XLSX.utils.book_append_sheet(wb, ws, `${curMonth}月薪資`);
+  XLSX.writeFile(wb, `薪資計算_${curYear}年${curMonth}月.xlsx`);
+  showToast('✅ 薪資 Excel 已下載！');
+}
+
+// Init
+renderSalary();
+</script>
+</body>
+</html>
