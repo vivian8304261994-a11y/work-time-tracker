@@ -3,163 +3,311 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>工時月記錄</title>
+<title>工時記錄 ✨</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'微軟正黑體','Microsoft JhengHei',Arial,sans-serif;background:#f0f2f5;color:#222;min-height:100vh}
+body{
+  font-family:'Nunito','微軟正黑體',sans-serif;
+  min-height:100vh;
+  background:linear-gradient(160deg,#fce4ec 0%,#ede7f6 50%,#e0f2f1 100%);
+  padding-bottom:50px;
+}
 
-header{background:#1a56db;color:#fff;padding:12px 20px;display:flex;align-items:center;gap:12px}
-header h1{font-size:1.1rem;letter-spacing:1px}
-.month-nav{display:flex;align-items:center;gap:8px;margin-left:auto}
-.month-nav button{background:rgba(255,255,255,.2);border:none;color:#fff;width:30px;height:30px;border-radius:4px;cursor:pointer;font-size:.95rem}
-.month-nav button:hover{background:rgba(255,255,255,.35)}
-.month-label{font-size:1.05rem;font-weight:bold;min-width:110px;text-align:center}
+/* ── Header ── */
+.header{
+  background:linear-gradient(135deg,#ff6b9d 0%,#c44dff 60%,#7c4dff 100%);
+  padding:28px 20px 22px;
+  text-align:center;
+  border-radius:0 0 32px 32px;
+  box-shadow:0 6px 24px rgba(124,77,255,.3);
+  position:relative;overflow:hidden;
+}
+.header::before{
+  content:'✦';position:absolute;top:10px;left:20px;
+  font-size:1.4rem;color:rgba(255,255,255,.4);
+}
+.header::after{
+  content:'✦';position:absolute;top:14px;right:24px;
+  font-size:1rem;color:rgba(255,255,255,.3);
+}
+.header h1{color:#fff;font-size:1.65rem;font-weight:900;letter-spacing:2px}
+.header p{color:rgba(255,255,255,.82);font-size:.85rem;margin-top:5px;font-weight:600}
 
-.layout{display:grid;grid-template-columns:340px 1fr;gap:14px;padding:14px;max-width:1080px;margin:0 auto}
+/* ── Month nav ── */
+.month-wrap{padding:14px 16px 0}
+.month-nav{
+  display:flex;align-items:center;justify-content:center;gap:14px;
+  background:#fff;border-radius:18px;padding:12px 18px;
+  box-shadow:0 3px 14px rgba(0,0,0,.07);
+}
+.month-nav button{
+  background:#f3f0ff;border:none;color:#7c4dff;
+  width:38px;height:38px;border-radius:50%;
+  font-size:1rem;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .2s;font-weight:800;
+  flex-shrink:0;
+}
+.month-nav button:hover{background:#7c4dff;color:#fff;transform:scale(1.05)}
+.month-nav button:disabled{opacity:.35;cursor:default;transform:none}
+.month-label{font-size:1.25rem;font-weight:900;color:#4a2fbd;min-width:130px;text-align:center}
 
-.panel{background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.1);padding:14px}
-.panel-title{font-size:.95rem;font-weight:bold;color:#1a56db;border-bottom:2px solid #e8f0fe;padding-bottom:7px;margin-bottom:12px}
+/* ── Content ── */
+.content{padding:14px 14px 0;max-width:540px;margin:0 auto}
 
-.form-group{margin-bottom:9px}
-.form-group label{display:block;font-size:.82rem;color:#555;margin-bottom:3px}
-.form-group input,.form-group select{width:100%;padding:7px 9px;border:1px solid #ddd;border-radius:4px;font-size:.9rem;font-family:inherit}
-.form-group input:focus,.form-group select:focus{outline:none;border-color:#1a56db;box-shadow:0 0 0 2px rgba(26,86,219,.12)}
-.hours-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+/* ── Card ── */
+.card{
+  background:#fff;border-radius:22px;padding:20px;
+  box-shadow:0 3px 18px rgba(0,0,0,.07);
+  margin-bottom:14px;
+}
+.card-title{
+  font-size:1.05rem;font-weight:900;color:#7c4dff;
+  margin-bottom:16px;display:flex;align-items:center;gap:7px;
+}
 
-.btn{padding:7px 14px;border:none;border-radius:4px;cursor:pointer;font-size:.88rem;font-family:inherit}
-.btn-primary{background:#1a56db;color:#fff;width:100%;margin-top:4px}
-.btn-primary:hover{background:#1648be}
-.btn-cancel{background:#eee;color:#444;width:100%;margin-top:5px;display:none}
-.btn-sm{padding:3px 8px;font-size:.78rem;border-radius:3px}
-.btn-edit{background:#e8f0fe;color:#1a56db}
-.btn-del{background:#fde8e8;color:#c0392b}
+/* ── Form ── */
+.form-row{margin-bottom:12px}
+.form-row label{
+  display:block;font-size:.78rem;font-weight:800;
+  color:#aaa;margin-bottom:5px;
+  text-transform:uppercase;letter-spacing:.8px;
+}
+.form-row input,.form-row select{
+  width:100%;padding:12px 14px;
+  border:2px solid #f0eeff;border-radius:14px;
+  font-size:.97rem;font-family:inherit;color:#333;
+  background:#faf9ff;transition:border-color .2s,background .2s;
+  -webkit-appearance:none;appearance:none;
+}
+.form-row input:focus,.form-row select:focus{
+  outline:none;border-color:#c44dff;background:#fff;
+}
+.hours-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.person-wrap{position:relative}
+.person-badge{
+  position:absolute;left:11px;top:50%;transform:translateY(-50%);
+  font-size:.75rem;font-weight:900;padding:3px 8px;border-radius:20px;
+  pointer-events:none;
+}
+.jie-badge{background:#ede0ff;color:#7c4dff}
+.feng-badge{background:#d5eeff;color:#0288d1}
+.person-wrap input{padding-left:50px}
 
-.edit-banner{background:#fff8e1;border:1px solid #ffc107;border-radius:4px;padding:6px 10px;font-size:.82rem;margin-bottom:9px;display:none}
+.btn-submit{
+  width:100%;padding:14px;margin-top:6px;
+  background:linear-gradient(135deg,#ff6b9d,#7c4dff);
+  color:#fff;border:none;border-radius:16px;
+  font-size:1.05rem;font-weight:900;font-family:inherit;
+  cursor:pointer;letter-spacing:1.5px;
+  box-shadow:0 5px 18px rgba(124,77,255,.35);
+  transition:opacity .2s,transform .1s;
+}
+.btn-submit:hover{opacity:.9}
+.btn-submit:active{transform:scale(.98)}
+
+.btn-cancel-edit{
+  width:100%;padding:10px;margin-top:8px;
+  background:#f5f5f5;color:#aaa;border:none;
+  border-radius:14px;font-size:.9rem;font-weight:700;
+  font-family:inherit;cursor:pointer;display:none;
+}
+.btn-cancel-edit:hover{background:#eee}
+
+.edit-banner{
+  background:linear-gradient(135deg,#fff8e1,#fff3e0);
+  border:2px dashed #ffc107;border-radius:12px;
+  padding:8px 14px;font-size:.83rem;font-weight:700;
+  color:#e65100;margin-bottom:12px;display:none;
+}
 .edit-banner.show{display:block}
 
-.records-section{margin-top:12px}
-.record-item{display:flex;align-items:center;gap:7px;padding:7px 4px;border-bottom:1px solid #f0f0f0;font-size:.83rem}
-.record-item:hover{background:#f8f9ff;border-radius:4px}
-.rec-day{font-weight:bold;color:#1a56db;min-width:26px}
-.rec-loc{flex:1;color:#444;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rec-hrs{font-size:.78rem;color:#666;white-space:nowrap}
-.rec-actions{display:flex;gap:4px}
-.empty{color:#aaa;font-size:.83rem;text-align:center;padding:14px}
+/* ── Record cards ── */
+.record-card{
+  display:flex;align-items:center;gap:10px;
+  background:#faf9ff;border-radius:16px;
+  padding:12px 13px;margin-bottom:8px;
+  border:2px solid #f0eeff;
+  transition:border-color .2s,transform .15s;
+}
+.record-card:hover{border-color:#c44dff;transform:translateX(2px)}
 
-/* Monthly table */
-.table-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.print-btn{padding:5px 12px;background:#28a745;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:.82rem}
-.table-wrap{overflow-x:auto}
-table.monthly{width:100%;border-collapse:collapse;font-size:.88rem}
-table.monthly th,table.monthly td{border:1px solid #888;padding:3px 7px;text-align:center;height:22px}
-table.monthly thead th{background:#f0f4ff;font-weight:bold;font-size:.92rem;height:28px}
-table.monthly th.col-day{width:38px}
-table.monthly th.col-loc{text-align:left}
-table.monthly th.col-person{width:68px;font-size:1rem}
-table.monthly td.day-num{color:#333;font-weight:500}
-table.monthly td.loc-cell{text-align:left;color:#444;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-table.monthly td.num-cell{color:#1a56db;font-weight:500}
-table.monthly tr.total-row td{background:#fff3f3;font-weight:bold;height:26px}
-table.monthly .total-label{color:#c0392b;text-align:center}
-table.monthly .total-border{border-top:2px solid #555}
+.rec-day{
+  background:linear-gradient(135deg,#7c4dff,#c44dff);
+  color:#fff;font-weight:900;font-size:.9rem;
+  width:42px;height:42px;border-radius:13px;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.rec-info{flex:1;min-width:0}
+.rec-loc{
+  font-weight:700;color:#333;font-size:.93rem;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.rec-tags{display:flex;gap:6px;margin-top:5px;flex-wrap:wrap}
+.tag{font-size:.73rem;font-weight:800;padding:2px 9px;border-radius:20px}
+.tag-jie{background:#ede0ff;color:#7c4dff}
+.tag-feng{background:#d5eeff;color:#0288d1}
 
-@media print{
-  header,.layout>*:first-child,.print-btn{display:none!important}
-  .panel{box-shadow:none;padding:0}
-  body{background:#fff}
-  table.monthly th,table.monthly td{border:1px solid #000}
+.rec-btns{display:flex;gap:6px;flex-shrink:0}
+.rec-btn{
+  width:34px;height:34px;border:none;border-radius:10px;
+  cursor:pointer;font-size:.95rem;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .15s;
+}
+.rec-btn-edit{background:#f3f0ff;color:#7c4dff}
+.rec-btn-del{background:#fff0f5;color:#ff4081}
+.rec-btn-edit:hover{background:#7c4dff;color:#fff}
+.rec-btn-del:hover{background:#ff4081;color:#fff}
+
+/* ── Summary ── */
+.summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.sum-box{padding:14px;border-radius:16px;text-align:center}
+.sum-box.jie{background:linear-gradient(135deg,#f3e8ff,#ede0ff)}
+.sum-box.feng{background:linear-gradient(135deg,#e0f4ff,#d5eeff)}
+.sum-name{font-size:.75rem;font-weight:800;text-transform:uppercase;letter-spacing:1px}
+.sum-box.jie .sum-name{color:#9c4dff}
+.sum-box.feng .sum-name{color:#0288d1}
+.sum-num{font-size:2rem;font-weight:900;line-height:1.2;margin-top:2px}
+.sum-box.jie .sum-num{color:#7c4dff}
+.sum-box.feng .sum-num{color:#0288d1}
+.sum-unit{font-size:.75rem;color:#bbb;font-weight:700}
+
+/* ── Empty ── */
+.empty{text-align:center;padding:28px 16px;color:#ccc}
+.empty-icon{font-size:3.2rem;margin-bottom:10px}
+.empty p{font-size:.9rem;font-weight:700;line-height:1.7}
+
+/* ── Toast ── */
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);
+  background:linear-gradient(135deg,#7c4dff,#c44dff);
+  color:#fff;padding:11px 24px;border-radius:50px;
+  font-size:.9rem;font-weight:800;
+  box-shadow:0 5px 20px rgba(124,77,255,.45);
+  transition:transform .35s cubic-bezier(.34,1.56,.64,1);
+  pointer-events:none;z-index:999;white-space:nowrap;
+}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* ── Decorative dots ── */
+.dots{
+  text-align:center;padding:8px 0 4px;
+  font-size:1rem;color:#d4b8ff;letter-spacing:6px;
 }
 </style>
 </head>
 <body>
 
-<header>
-  <h1>📋 工時月記錄</h1>
+<div class="header">
+  <h1>🌟 工時月記錄</h1>
+  <p>每天去哪裡工作、做了多少小時 ✨</p>
+</div>
+
+<div class="month-wrap">
   <div class="month-nav">
-    <button onclick="changeMonth(-1)">◀</button>
+    <button id="btnPrev" onclick="changeMonth(-1)">◀</button>
     <div class="month-label" id="monthLabel"></div>
     <button onclick="changeMonth(1)">▶</button>
   </div>
-</header>
+</div>
 
-<div class="layout">
+<div class="content">
 
-  <!-- Left panel -->
-  <div>
-    <div class="panel">
-      <div class="panel-title" id="formTitle">新增記錄</div>
-      <div class="edit-banner" id="editBanner"></div>
-      <form id="mainForm" onsubmit="saveRecord(event)">
-        <input type="hidden" id="editId">
-        <div class="form-group">
-          <label>日（幾號）</label>
-          <select id="inputDay"></select>
-        </div>
-        <div class="form-group">
-          <label>工作地點</label>
-          <input type="text" id="inputLoc" placeholder="台北辦公室、工廠、家裡…" autocomplete="off">
-        </div>
-        <div class="hours-row">
-          <div class="form-group">
-            <label>傑 時數</label>
+  <!-- Add / Edit form -->
+  <div class="card">
+    <div class="card-title" id="formTitle">📝 新增記錄</div>
+    <div class="edit-banner" id="editBanner"></div>
+
+    <form id="mainForm" onsubmit="saveRecord(event)">
+      <input type="hidden" id="editId">
+
+      <div class="form-row">
+        <label>📅 幾號</label>
+        <select id="inputDay"></select>
+      </div>
+
+      <div class="form-row">
+        <label>📍 工作地點</label>
+        <input type="text" id="inputLoc" placeholder="台北辦公室、工廠、家裡…" autocomplete="off">
+      </div>
+
+      <div class="hours-grid">
+        <div class="form-row">
+          <label>傑 ・ 幾小時</label>
+          <div class="person-wrap">
+            <span class="person-badge jie-badge">傑</span>
             <input type="number" id="inputJie" placeholder="0" min="0" max="24" step="0.5">
           </div>
-          <div class="form-group">
-            <label>峰 時數</label>
+        </div>
+        <div class="form-row">
+          <label>峰 ・ 幾小時</label>
+          <div class="person-wrap">
+            <span class="person-badge feng-badge">峰</span>
             <input type="number" id="inputFeng" placeholder="0" min="0" max="24" step="0.5">
           </div>
         </div>
-        <button type="submit" class="btn btn-primary" id="submitBtn">新增</button>
-        <button type="button" class="btn btn-cancel" id="cancelBtn" onclick="cancelEdit()">取消</button>
-      </form>
-    </div>
+      </div>
 
-    <div class="panel records-section">
-      <div class="panel-title">本月記錄 <span id="recCount" style="font-weight:normal;color:#888;font-size:.82rem"></span></div>
-      <div id="recordsList"></div>
-    </div>
+      <button type="submit" class="btn-submit" id="submitBtn">✨ 新增</button>
+      <button type="button" class="btn-cancel-edit" id="cancelBtn" onclick="cancelEdit()">✕ 取消編輯</button>
+    </form>
   </div>
 
-  <!-- Right panel: monthly table -->
-  <div class="panel">
-    <div class="table-header">
-      <div class="panel-title" id="tableTitle" style="margin-bottom:0;border-bottom:none;padding-bottom:0"></div>
-      <button class="print-btn" onclick="window.print()">🖨️ 列印</button>
+  <!-- Records -->
+  <div class="card">
+    <div class="card-title">
+      📋 本月記錄
+      <span id="recCount" style="font-weight:700;color:#ccc;font-size:.83rem"></span>
     </div>
-    <div class="table-wrap">
-      <table class="monthly">
-        <thead>
-          <tr>
-            <th class="col-day"></th>
-            <th class="col-loc"></th>
-            <th class="col-person">傑</th>
-            <th class="col-person">峰</th>
-          </tr>
-        </thead>
-        <tbody id="tableBody"></tbody>
-      </table>
+
+    <div class="summary-grid" id="summaryGrid" style="display:none">
+      <div class="sum-box jie">
+        <div class="sum-name">傑 總計</div>
+        <div class="sum-num" id="jieTotal">0</div>
+        <div class="sum-unit">小時</div>
+      </div>
+      <div class="sum-box feng">
+        <div class="sum-name">峰 總計</div>
+        <div class="sum-num" id="fengTotal">0</div>
+        <div class="sum-unit">小時</div>
+      </div>
     </div>
+
+    <div id="recordsList"></div>
   </div>
 
+  <div class="dots">· · ·</div>
 </div>
 
-<script>
-const KEY = 'worklog_v1';
-let curYear = new Date().getFullYear();
-let curMonth = new Date().getMonth() + 1;
-let editingId = null;
+<div class="toast" id="toast"></div>
 
-function getData(){ try{ return JSON.parse(localStorage.getItem(KEY)||'[]'); }catch{ return []; } }
-function setData(d){ localStorage.setItem(KEY, JSON.stringify(d)); }
-function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2); }
-function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function daysInMonth(y,m){ return new Date(y,m,0).getDate(); }
+<script>
+const KEY='worklog_v1';
+const S_YEAR=2026,S_MONTH=7;
+let curYear=S_YEAR,curMonth=S_MONTH,editingId=null;
+
+function getData(){try{return JSON.parse(localStorage.getItem(KEY)||'[]');}catch{return[];}}
+function setData(d){localStorage.setItem(KEY,JSON.stringify(d));}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2);}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function daysInMonth(y,m){return new Date(y,m,0).getDate();}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer=setTimeout(()=>t.classList.remove('show'),2000);
+}
 
 function changeMonth(d){
-  curMonth+=d;
-  if(curMonth>12){curMonth=1;curYear++;}
-  if(curMonth<1){curMonth=12;curYear--;}
-  if(editingId){ cancelEdit(); }
+  let m=curMonth+d,y=curYear;
+  if(m>12){m=1;y++;}if(m<1){m=12;y--;}
+  if(y<S_YEAR||(y===S_YEAR&&m<S_MONTH))return;
+  curMonth=m;curYear=y;
+  if(editingId)cancelEdit();
   renderAll();
 }
 
@@ -170,60 +318,62 @@ function populateDaySelect(){
   sel.innerHTML='';
   for(let d=1;d<=days;d++){
     const o=document.createElement('option');
-    o.value=d; o.textContent=d+' 日';
-    sel.appendChild(o);
+    o.value=d;o.textContent=d+' 日';sel.appendChild(o);
   }
   const today=new Date();
   const def=(curYear===today.getFullYear()&&curMonth===today.getMonth()+1)?today.getDate():1;
   sel.value=(prev&&+prev<=days)?prev:def;
 }
 
-function renderTable(){
-  const recs=getData().filter(r=>r.year===curYear&&r.month===curMonth);
-  const byDay={};
-  recs.forEach(r=>{byDay[r.day]=r;});
-  const days=daysInMonth(curYear,curMonth);
-  const tb=document.getElementById('tableBody');
-  tb.innerHTML='';
-  let tj=0,tf=0;
-  for(let d=1;d<=days;d++){
-    const r=byDay[d];
-    const j=r?(parseFloat(r.jieHours)||0):0;
-    const f=r?(parseFloat(r.fengHours)||0):0;
-    tj+=j; tf+=f;
-    const tr=document.createElement('tr');
-    tr.innerHTML=`
-      <td class="day-num">${d}</td>
-      <td class="loc-cell">${r&&r.location?esc(r.location):''}</td>
-      <td class="${j?'num-cell':''}">${j||''}</td>
-      <td class="${f?'num-cell':''}">${f||''}</td>`;
-    tb.appendChild(tr);
-  }
-  const tr=document.createElement('tr');
-  tr.className='total-row';
-  tr.innerHTML=`
-    <td class="total-border"></td>
-    <td class="total-label total-border">總計</td>
-    <td class="total-border">${tj||''}</td>
-    <td class="total-border">${tf||''}</td>`;
-  tb.appendChild(tr);
+function emoji(loc){
+  if(!loc)return'📍';
+  const l=loc;
+  if(/家|home/i.test(l))return'🏠';
+  if(/廠|工廠|factory/i.test(l))return'🏭';
+  if(/辦公|office/i.test(l))return'🏢';
+  if(/台北|臺北/i.test(l))return'🌆';
+  if(/高雄/i.test(l))return'🌇';
+  if(/台中|臺中/i.test(l))return'🌃';
+  if(/外出|出差/i.test(l))return'🚗';
+  return'📍';
 }
 
 function renderList(){
   const recs=getData().filter(r=>r.year===curYear&&r.month===curMonth).sort((a,b)=>a.day-b.day);
   document.getElementById('recCount').textContent=recs.length?`（${recs.length} 筆）`:'';
+
+  let tj=0,tf=0;
+  recs.forEach(r=>{tj+=parseFloat(r.jieHours)||0;tf+=parseFloat(r.fengHours)||0;});
+
+  const sg=document.getElementById('summaryGrid');
+  if(recs.length){
+    sg.style.display='grid';
+    document.getElementById('jieTotal').textContent=tj%1?tj.toFixed(1):tj;
+    document.getElementById('fengTotal').textContent=tf%1?tf.toFixed(1):tf;
+  }else{sg.style.display='none';}
+
   const el=document.getElementById('recordsList');
-  if(!recs.length){el.innerHTML='<div class="empty">尚無記錄</div>';return;}
-  el.innerHTML=recs.map(r=>`
-    <div class="record-item">
-      <span class="rec-day">${r.day}日</span>
-      <span class="rec-loc">${esc(r.location||'—')}</span>
-      <span class="rec-hrs">傑${r.jieHours||0}h 峰${r.fengHours||0}h</span>
-      <div class="rec-actions">
-        <button class="btn btn-sm btn-edit" onclick="startEdit('${r.id}')">編輯</button>
-        <button class="btn btn-sm btn-del" onclick="delRecord('${r.id}')">刪</button>
-      </div>
-    </div>`).join('');
+  if(!recs.length){
+    el.innerHTML=`<div class="empty"><div class="empty-icon">🌸</div><p>這個月還沒有記錄喔～<br>快來新增第一筆吧！</p></div>`;
+    return;
+  }
+  el.innerHTML=recs.map(r=>{
+    const j=parseFloat(r.jieHours)||0;
+    const f=parseFloat(r.fengHours)||0;
+    return`<div class="record-card">
+  <div class="rec-day">${r.day}</div>
+  <div class="rec-info">
+    <div class="rec-loc">${emoji(r.location)} ${esc(r.location||'（無地點）')}</div>
+    <div class="rec-tags">
+      ${j?`<span class="tag tag-jie">傑 ${j}h</span>`:''}
+      ${f?`<span class="tag tag-feng">峰 ${f}h</span>`:''}
+    </div>
+  </div>
+  <div class="rec-btns">
+    <button class="rec-btn rec-btn-edit" onclick="startEdit('${r.id}')">✏️</button>
+    <button class="rec-btn rec-btn-del" onclick="delRecord('${r.id}')">🗑️</button>
+  </div>
+</div>`}).join('');
 }
 
 function saveRecord(e){
@@ -232,55 +382,50 @@ function saveRecord(e){
   const loc=document.getElementById('inputLoc').value.trim();
   const jie=document.getElementById('inputJie').value;
   const feng=document.getElementById('inputFeng').value;
-  if(!loc&&!jie&&!feng){ alert('請至少填入地點或時數'); return; }
+  if(!loc&&!jie&&!feng){alert('請填入地點或時數 😊');return;}
   const data=getData();
   if(editingId){
     const i=data.findIndex(r=>r.id===editingId);
-    if(i>=0) data[i]={...data[i],day,location:loc,jieHours:jie,fengHours:feng};
-    editingId=null;
-  } else {
+    if(i>=0)data[i]={...data[i],day,location:loc,jieHours:jie,fengHours:feng};
+    editingId=null;showToast('✅ 已儲存！');
+  }else{
     const ex=data.find(r=>r.year===curYear&&r.month===curMonth&&r.day===day);
     if(ex){
-      if(!confirm(`${day} 日已有記錄，要覆蓋嗎？`)) return;
-      const i=data.indexOf(ex);
-      data[i]={...ex,location:loc,jieHours:jie,fengHours:feng};
-    } else {
+      if(!confirm(`${day} 日已有記錄，要覆蓋嗎？`))return;
+      data[data.indexOf(ex)]={...ex,location:loc,jieHours:jie,fengHours:feng};
+    }else{
       data.push({id:uid(),year:curYear,month:curMonth,day,location:loc,jieHours:jie,fengHours:feng});
     }
+    showToast('🎉 新增成功！');
   }
-  setData(data);
-  resetForm();
-  renderAll();
+  setData(data);resetForm();renderAll();
 }
 
 function startEdit(id){
   const r=getData().find(x=>x.id===id);
-  if(!r) return;
+  if(!r)return;
   editingId=id;
   document.getElementById('inputDay').value=r.day;
   document.getElementById('inputLoc').value=r.location||'';
   document.getElementById('inputJie').value=r.jieHours||'';
   document.getElementById('inputFeng').value=r.fengHours||'';
-  document.getElementById('formTitle').textContent='編輯記錄';
-  document.getElementById('submitBtn').textContent='儲存';
+  document.getElementById('formTitle').textContent='✏️ 編輯記錄';
+  document.getElementById('submitBtn').textContent='💾 儲存';
   document.getElementById('cancelBtn').style.display='block';
   const b=document.getElementById('editBanner');
-  b.textContent=`✏️ 正在編輯：${curYear}/${curMonth}/${r.day}`;
+  b.textContent=`✦ 正在編輯：${curYear}/${String(curMonth).padStart(2,'0')}/${r.day}`;
   b.classList.add('show');
   document.getElementById('inputLoc').focus();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-function cancelEdit(){
-  editingId=null;
-  resetForm();
-}
+function cancelEdit(){editingId=null;resetForm();}
 
 function delRecord(id){
-  if(!confirm('確定刪除這筆記錄？')) return;
+  if(!confirm('確定要刪除這筆記錄嗎？ 🥺'))return;
   setData(getData().filter(r=>r.id!==id));
-  if(editingId===id) resetForm();
-  renderAll();
+  if(editingId===id)resetForm();
+  showToast('🗑️ 已刪除');renderAll();
 }
 
 function resetForm(){
@@ -288,20 +433,18 @@ function resetForm(){
   document.getElementById('mainForm').reset();
   document.getElementById('inputJie').value='';
   document.getElementById('inputFeng').value='';
-  document.getElementById('formTitle').textContent='新增記錄';
-  document.getElementById('submitBtn').textContent='新增';
+  document.getElementById('formTitle').textContent='📝 新增記錄';
+  document.getElementById('submitBtn').textContent='✨ 新增';
   document.getElementById('cancelBtn').style.display='none';
   document.getElementById('editBanner').classList.remove('show');
   populateDaySelect();
 }
 
 function renderAll(){
-  const lbl=`${curYear} 年 ${curMonth} 月`;
-  document.getElementById('monthLabel').textContent=lbl;
-  document.getElementById('tableTitle').textContent=lbl;
-  populateDaySelect();
-  renderTable();
-  renderList();
+  const mn=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  document.getElementById('monthLabel').textContent=`${curYear} 年 ${mn[curMonth-1]}`;
+  document.getElementById('btnPrev').disabled=(curYear===S_YEAR&&curMonth===S_MONTH);
+  populateDaySelect();renderList();
 }
 
 renderAll();
