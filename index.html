@@ -218,6 +218,51 @@ body{
   text-align:center;padding:8px 0 4px;
   font-size:1rem;color:#d4b8ff;letter-spacing:6px;
 }
+
+/* ── Report button & table ── */
+.btn-report{
+  width:100%;padding:14px;margin-bottom:14px;
+  background:linear-gradient(135deg,#43cea2,#185a9d);
+  color:#fff;border:none;border-radius:16px;
+  font-size:1.05rem;font-weight:900;font-family:inherit;
+  cursor:pointer;letter-spacing:1.5px;
+  box-shadow:0 5px 18px rgba(24,90,157,.28);
+  transition:opacity .2s,transform .1s;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.btn-report:hover{opacity:.9}
+.btn-report:active{transform:scale(.98)}
+
+.table-section{display:none}
+.table-section.open{display:block}
+.table-wrap{overflow-x:auto}
+table.monthly{
+  width:100%;border-collapse:collapse;
+  font-size:.88rem;font-family:inherit;
+}
+table.monthly th,table.monthly td{
+  border:1px solid #d8d0f0;padding:5px 8px;text-align:center;
+}
+table.monthly thead th{
+  background:linear-gradient(135deg,#ede7f6,#e8eaf6);
+  font-weight:900;color:#5e35b1;font-size:.9rem;height:32px;
+}
+table.monthly th.col-loc{text-align:left}
+table.monthly td.t-day{color:#7c4dff;font-weight:800}
+table.monthly td.t-loc{
+  text-align:left;color:#555;
+  max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+table.monthly td.t-num{color:#4a2fbd;font-weight:700}
+table.monthly tr.t-leave td{background:#fff8f0}
+table.monthly tr.t-leave td.t-loc{color:#e65100;font-weight:700}
+table.monthly tr.t-nocall td{background:#f7f9fa}
+table.monthly tr.t-nocall td.t-loc{color:#78909c;font-weight:700}
+table.monthly tr.t-total td{
+  background:linear-gradient(135deg,#fce4ec,#f3e5f5);
+  font-weight:900;border-top:2px solid #ce93d8;
+}
+table.monthly .total-label{color:#c0392b;font-weight:900}
 </style>
 </head>
 <body>
@@ -305,6 +350,24 @@ body{
   </div>
 
   <div class="dots">· · ·</div>
+
+  <button class="btn-report" id="btnReport" onclick="toggleTable()">📊 查看月報表</button>
+
+  <div class="table-section card" id="tableSection">
+    <div class="table-wrap">
+      <table class="monthly">
+        <thead>
+          <tr>
+            <th style="width:38px"></th>
+            <th class="col-loc"></th>
+            <th style="width:60px">傑</th>
+            <th style="width:60px">峰</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -489,11 +552,52 @@ function resetForm(){
   populateDaySelect();
 }
 
+function toggleTable(){
+  const sec=document.getElementById('tableSection');
+  const btn=document.getElementById('btnReport');
+  const open=sec.classList.toggle('open');
+  btn.textContent=open?'📊 收起月報表':'📊 查看月報表';
+  if(open){renderTable();sec.scrollIntoView({behavior:'smooth',block:'start'});}
+}
+
+function renderTable(){
+  const recs=getData().filter(r=>r.year===curYear&&r.month===curMonth);
+  const byDay={};recs.forEach(r=>{byDay[r.day]=r;});
+  const days=daysInMonth(curYear,curMonth);
+  const tb=document.getElementById('tableBody');
+  tb.innerHTML='';
+  let tj=0,tf=0;
+  for(let d=1;d<=days;d++){
+    const r=byDay[d];
+    const j=r?(parseFloat(r.jieHours)||0):0;
+    const f=r?(parseFloat(r.fengHours)||0):0;
+    tj+=j;tf+=f;
+    const isLeave=r&&r.location==='請假';
+    const isNocall=r&&r.location==='沒叫';
+    const cls=isLeave?'t-leave':isNocall?'t-nocall':'';
+    const locText=r&&r.location?r.location:'';
+    const tr=document.createElement('tr');
+    if(cls)tr.className=cls;
+    tr.innerHTML=`<td class="t-day">${d}</td>
+<td class="t-loc">${locText?emoji(locText)+' '+locText:''}</td>
+<td class="t-num">${j||''}</td>
+<td class="t-num">${f||''}</td>`;
+    tb.appendChild(tr);
+  }
+  const tot=document.createElement('tr');
+  tot.className='t-total';
+  tot.innerHTML=`<td></td><td class="total-label" style="text-align:center">總計</td>
+<td>${tj%1?tj.toFixed(1):tj||''}</td>
+<td>${tf%1?tf.toFixed(1):tf||''}</td>`;
+  tb.appendChild(tot);
+}
+
 function renderAll(){
   const mn=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
   document.getElementById('monthLabel').textContent=`${curYear} 年 ${mn[curMonth-1]}`;
   document.getElementById('btnPrev').disabled=(curYear===S_YEAR&&curMonth===S_MONTH);
   populateDaySelect();renderList();
+  if(document.getElementById('tableSection').classList.contains('open'))renderTable();
 }
 
 renderAll();
