@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工時月記錄</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'微軟正黑體','Microsoft JhengHei',Arial,sans-serif;background:#f0f2f5;color:#222;min-height:100vh}
+
+header{background:#1a56db;color:#fff;padding:12px 20px;display:flex;align-items:center;gap:12px}
+header h1{font-size:1.1rem;letter-spacing:1px}
+.month-nav{display:flex;align-items:center;gap:8px;margin-left:auto}
+.month-nav button{background:rgba(255,255,255,.2);border:none;color:#fff;width:30px;height:30px;border-radius:4px;cursor:pointer;font-size:.95rem}
+.month-nav button:hover{background:rgba(255,255,255,.35)}
+.month-label{font-size:1.05rem;font-weight:bold;min-width:110px;text-align:center}
+
+.layout{display:grid;grid-template-columns:340px 1fr;gap:14px;padding:14px;max-width:1080px;margin:0 auto}
+
+.panel{background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.1);padding:14px}
+.panel-title{font-size:.95rem;font-weight:bold;color:#1a56db;border-bottom:2px solid #e8f0fe;padding-bottom:7px;margin-bottom:12px}
+
+.form-group{margin-bottom:9px}
+.form-group label{display:block;font-size:.82rem;color:#555;margin-bottom:3px}
+.form-group input,.form-group select{width:100%;padding:7px 9px;border:1px solid #ddd;border-radius:4px;font-size:.9rem;font-family:inherit}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:#1a56db;box-shadow:0 0 0 2px rgba(26,86,219,.12)}
+.hours-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+.btn{padding:7px 14px;border:none;border-radius:4px;cursor:pointer;font-size:.88rem;font-family:inherit}
+.btn-primary{background:#1a56db;color:#fff;width:100%;margin-top:4px}
+.btn-primary:hover{background:#1648be}
+.btn-cancel{background:#eee;color:#444;width:100%;margin-top:5px;display:none}
+.btn-sm{padding:3px 8px;font-size:.78rem;border-radius:3px}
+.btn-edit{background:#e8f0fe;color:#1a56db}
+.btn-del{background:#fde8e8;color:#c0392b}
+
+.edit-banner{background:#fff8e1;border:1px solid #ffc107;border-radius:4px;padding:6px 10px;font-size:.82rem;margin-bottom:9px;display:none}
+.edit-banner.show{display:block}
+
+.records-section{margin-top:12px}
+.record-item{display:flex;align-items:center;gap:7px;padding:7px 4px;border-bottom:1px solid #f0f0f0;font-size:.83rem}
+.record-item:hover{background:#f8f9ff;border-radius:4px}
+.rec-day{font-weight:bold;color:#1a56db;min-width:26px}
+.rec-loc{flex:1;color:#444;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rec-hrs{font-size:.78rem;color:#666;white-space:nowrap}
+.rec-actions{display:flex;gap:4px}
+.empty{color:#aaa;font-size:.83rem;text-align:center;padding:14px}
+
+/* Monthly table */
+.table-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.print-btn{padding:5px 12px;background:#28a745;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:.82rem}
+.table-wrap{overflow-x:auto}
+table.monthly{width:100%;border-collapse:collapse;font-size:.88rem}
+table.monthly th,table.monthly td{border:1px solid #888;padding:3px 7px;text-align:center;height:22px}
+table.monthly thead th{background:#f0f4ff;font-weight:bold;font-size:.92rem;height:28px}
+table.monthly th.col-day{width:38px}
+table.monthly th.col-loc{text-align:left}
+table.monthly th.col-person{width:68px;font-size:1rem}
+table.monthly td.day-num{color:#333;font-weight:500}
+table.monthly td.loc-cell{text-align:left;color:#444;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+table.monthly td.num-cell{color:#1a56db;font-weight:500}
+table.monthly tr.total-row td{background:#fff3f3;font-weight:bold;height:26px}
+table.monthly .total-label{color:#c0392b;text-align:center}
+table.monthly .total-border{border-top:2px solid #555}
+
+@media print{
+  header,.layout>*:first-child,.print-btn{display:none!important}
+  .panel{box-shadow:none;padding:0}
+  body{background:#fff}
+  table.monthly th,table.monthly td{border:1px solid #000}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📋 工時月記錄</h1>
+  <div class="month-nav">
+    <button onclick="changeMonth(-1)">◀</button>
+    <div class="month-label" id="monthLabel"></div>
+    <button onclick="changeMonth(1)">▶</button>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- Left panel -->
+  <div>
+    <div class="panel">
+      <div class="panel-title" id="formTitle">新增記錄</div>
+      <div class="edit-banner" id="editBanner"></div>
+      <form id="mainForm" onsubmit="saveRecord(event)">
+        <input type="hidden" id="editId">
+        <div class="form-group">
+          <label>日（幾號）</label>
+          <select id="inputDay"></select>
+        </div>
+        <div class="form-group">
+          <label>工作地點</label>
+          <input type="text" id="inputLoc" placeholder="台北辦公室、工廠、家裡…" autocomplete="off">
+        </div>
+        <div class="hours-row">
+          <div class="form-group">
+            <label>傑 時數</label>
+            <input type="number" id="inputJie" placeholder="0" min="0" max="24" step="0.5">
+          </div>
+          <div class="form-group">
+            <label>峰 時數</label>
+            <input type="number" id="inputFeng" placeholder="0" min="0" max="24" step="0.5">
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary" id="submitBtn">新增</button>
+        <button type="button" class="btn btn-cancel" id="cancelBtn" onclick="cancelEdit()">取消</button>
+      </form>
+    </div>
+
+    <div class="panel records-section">
+      <div class="panel-title">本月記錄 <span id="recCount" style="font-weight:normal;color:#888;font-size:.82rem"></span></div>
+      <div id="recordsList"></div>
+    </div>
+  </div>
+
+  <!-- Right panel: monthly table -->
+  <div class="panel">
+    <div class="table-header">
+      <div class="panel-title" id="tableTitle" style="margin-bottom:0;border-bottom:none;padding-bottom:0"></div>
+      <button class="print-btn" onclick="window.print()">🖨️ 列印</button>
+    </div>
+    <div class="table-wrap">
+      <table class="monthly">
+        <thead>
+          <tr>
+            <th class="col-day"></th>
+            <th class="col-loc"></th>
+            <th class="col-person">傑</th>
+            <th class="col-person">峰</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const KEY = 'worklog_v1';
+let curYear = new Date().getFullYear();
+let curMonth = new Date().getMonth() + 1;
+let editingId = null;
+
+function getData(){ try{ return JSON.parse(localStorage.getItem(KEY)||'[]'); }catch{ return []; } }
+function setData(d){ localStorage.setItem(KEY, JSON.stringify(d)); }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2); }
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function daysInMonth(y,m){ return new Date(y,m,0).getDate(); }
+
+function changeMonth(d){
+  curMonth+=d;
+  if(curMonth>12){curMonth=1;curYear++;}
+  if(curMonth<1){curMonth=12;curYear--;}
+  if(editingId){ cancelEdit(); }
+  renderAll();
+}
+
+function populateDaySelect(){
+  const sel=document.getElementById('inputDay');
+  const days=daysInMonth(curYear,curMonth);
+  const prev=sel.value;
+  sel.innerHTML='';
+  for(let d=1;d<=days;d++){
+    const o=document.createElement('option');
+    o.value=d; o.textContent=d+' 日';
+    sel.appendChild(o);
+  }
+  const today=new Date();
+  const def=(curYear===today.getFullYear()&&curMonth===today.getMonth()+1)?today.getDate():1;
+  sel.value=(prev&&+prev<=days)?prev:def;
+}
+
+function renderTable(){
+  const recs=getData().filter(r=>r.year===curYear&&r.month===curMonth);
+  const byDay={};
+  recs.forEach(r=>{byDay[r.day]=r;});
+  const days=daysInMonth(curYear,curMonth);
+  const tb=document.getElementById('tableBody');
+  tb.innerHTML='';
+  let tj=0,tf=0;
+  for(let d=1;d<=days;d++){
+    const r=byDay[d];
+    const j=r?(parseFloat(r.jieHours)||0):0;
+    const f=r?(parseFloat(r.fengHours)||0):0;
+    tj+=j; tf+=f;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td class="day-num">${d}</td>
+      <td class="loc-cell">${r&&r.location?esc(r.location):''}</td>
+      <td class="${j?'num-cell':''}">${j||''}</td>
+      <td class="${f?'num-cell':''}">${f||''}</td>`;
+    tb.appendChild(tr);
+  }
+  const tr=document.createElement('tr');
+  tr.className='total-row';
+  tr.innerHTML=`
+    <td class="total-border"></td>
+    <td class="total-label total-border">總計</td>
+    <td class="total-border">${tj||''}</td>
+    <td class="total-border">${tf||''}</td>`;
+  tb.appendChild(tr);
+}
+
+function renderList(){
+  const recs=getData().filter(r=>r.year===curYear&&r.month===curMonth).sort((a,b)=>a.day-b.day);
+  document.getElementById('recCount').textContent=recs.length?`（${recs.length} 筆）`:'';
+  const el=document.getElementById('recordsList');
+  if(!recs.length){el.innerHTML='<div class="empty">尚無記錄</div>';return;}
+  el.innerHTML=recs.map(r=>`
+    <div class="record-item">
+      <span class="rec-day">${r.day}日</span>
+      <span class="rec-loc">${esc(r.location||'—')}</span>
+      <span class="rec-hrs">傑${r.jieHours||0}h 峰${r.fengHours||0}h</span>
+      <div class="rec-actions">
+        <button class="btn btn-sm btn-edit" onclick="startEdit('${r.id}')">編輯</button>
+        <button class="btn btn-sm btn-del" onclick="delRecord('${r.id}')">刪</button>
+      </div>
+    </div>`).join('');
+}
+
+function saveRecord(e){
+  e.preventDefault();
+  const day=+document.getElementById('inputDay').value;
+  const loc=document.getElementById('inputLoc').value.trim();
+  const jie=document.getElementById('inputJie').value;
+  const feng=document.getElementById('inputFeng').value;
+  if(!loc&&!jie&&!feng){ alert('請至少填入地點或時數'); return; }
+  const data=getData();
+  if(editingId){
+    const i=data.findIndex(r=>r.id===editingId);
+    if(i>=0) data[i]={...data[i],day,location:loc,jieHours:jie,fengHours:feng};
+    editingId=null;
+  } else {
+    const ex=data.find(r=>r.year===curYear&&r.month===curMonth&&r.day===day);
+    if(ex){
+      if(!confirm(`${day} 日已有記錄，要覆蓋嗎？`)) return;
+      const i=data.indexOf(ex);
+      data[i]={...ex,location:loc,jieHours:jie,fengHours:feng};
+    } else {
+      data.push({id:uid(),year:curYear,month:curMonth,day,location:loc,jieHours:jie,fengHours:feng});
+    }
+  }
+  setData(data);
+  resetForm();
+  renderAll();
+}
+
+function startEdit(id){
+  const r=getData().find(x=>x.id===id);
+  if(!r) return;
+  editingId=id;
+  document.getElementById('inputDay').value=r.day;
+  document.getElementById('inputLoc').value=r.location||'';
+  document.getElementById('inputJie').value=r.jieHours||'';
+  document.getElementById('inputFeng').value=r.fengHours||'';
+  document.getElementById('formTitle').textContent='編輯記錄';
+  document.getElementById('submitBtn').textContent='儲存';
+  document.getElementById('cancelBtn').style.display='block';
+  const b=document.getElementById('editBanner');
+  b.textContent=`✏️ 正在編輯：${curYear}/${curMonth}/${r.day}`;
+  b.classList.add('show');
+  document.getElementById('inputLoc').focus();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function cancelEdit(){
+  editingId=null;
+  resetForm();
+}
+
+function delRecord(id){
+  if(!confirm('確定刪除這筆記錄？')) return;
+  setData(getData().filter(r=>r.id!==id));
+  if(editingId===id) resetForm();
+  renderAll();
+}
+
+function resetForm(){
+  editingId=null;
+  document.getElementById('mainForm').reset();
+  document.getElementById('inputJie').value='';
+  document.getElementById('inputFeng').value='';
+  document.getElementById('formTitle').textContent='新增記錄';
+  document.getElementById('submitBtn').textContent='新增';
+  document.getElementById('cancelBtn').style.display='none';
+  document.getElementById('editBanner').classList.remove('show');
+  populateDaySelect();
+}
+
+function renderAll(){
+  const lbl=`${curYear} 年 ${curMonth} 月`;
+  document.getElementById('monthLabel').textContent=lbl;
+  document.getElementById('tableTitle').textContent=lbl;
+  populateDaySelect();
+  renderTable();
+  renderList();
+}
+
+renderAll();
+</script>
+</body>
+</html>
