@@ -662,12 +662,18 @@ function exportExcel(){
   const mn=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
 
   const rows=[];
-  // Header row
+  // Title row
+  const titleStyle={font:{name:'DFKai-SB',sz:16,bold:true,color:{rgb:'4A2FBD'}},alignment:{horizontal:'center',vertical:'center'}};
   rows.push([
-    {v:'',s:cs()},
-    {v:'',s:cs({align:'left'})},
-    {v:'傑',s:cs({sz:16,bold:true,outer:true})},
-    {v:'峰',s:cs({sz:16,bold:true,outer:true})}
+    {v:`${curYear}年${mn[curMonth-1]} 工時記錄`,s:titleStyle},
+    {v:'',s:titleStyle},{v:'',s:titleStyle},{v:'',s:titleStyle}
+  ]);
+  // Column header row
+  rows.push([
+    {v:'日',s:cs({bold:true,sz:12,outer:true,bg:'EDE7F6'})},
+    {v:'地點',s:cs({bold:true,sz:12,align:'left',outer:true,bg:'EDE7F6'})},
+    {v:'傑',s:cs({sz:16,bold:true,outer:true,bg:'EDE7F6'})},
+    {v:'峰',s:cs({sz:16,bold:true,outer:true,bg:'EDE7F6'})}
   ]);
   // Day rows
   for(let d=1;d<=days;d++){
@@ -682,18 +688,19 @@ function exportExcel(){
       {v:f,  s:cs()}
     ]);
   }
-  // 總計 row
-  const lastDataRow=days+1;
+  // 總計 row (now offset by 2 header rows)
+  const lastDataRow=days+2;
   rows.push([
     {v:'',s:cs({outer:true})},
     {v:'總計',s:cs({bold:true,sz:14,color:'C0392B',align:'center',outer:true,bg:'FFF3F3'})},
-    {f:`SUM(C2:C${lastDataRow})`,s:cs({bold:true,outer:true,bg:'FFF3F3'})},
-    {f:`SUM(D2:D${lastDataRow})`,s:cs({bold:true,outer:true,bg:'FFF3F3'})}
+    {f:`SUM(C3:C${lastDataRow})`,s:cs({bold:true,outer:true,bg:'FFF3F3'})},
+    {f:`SUM(D3:D${lastDataRow})`,s:cs({bold:true,outer:true,bg:'FFF3F3'})}
   ]);
 
   const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:3}}];
   ws['!cols']=[{wch:6},{wch:38},{wch:10},{wch:10}];
-  ws['!rows']=[{hpx:30}];
+  ws['!rows']=[{hpx:36},{hpx:30}];
   for(let i=0;i<=days;i++) ws['!rows'].push({hpx:22});
 
   const wb=XLSX.utils.book_new();
