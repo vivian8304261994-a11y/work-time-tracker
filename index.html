@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>工時記錄 ✨</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{
@@ -220,18 +221,31 @@ body{
 }
 
 /* ── Report button & table ── */
+.action-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
 .btn-report{
-  width:100%;padding:14px;margin-bottom:14px;
+  padding:14px 8px;
   background:linear-gradient(135deg,#43cea2,#185a9d);
   color:#fff;border:none;border-radius:16px;
-  font-size:1.05rem;font-weight:900;font-family:inherit;
-  cursor:pointer;letter-spacing:1.5px;
+  font-size:.95rem;font-weight:900;font-family:inherit;
+  cursor:pointer;letter-spacing:.5px;
   box-shadow:0 5px 18px rgba(24,90,157,.28);
   transition:opacity .2s,transform .1s;
-  display:flex;align-items:center;justify-content:center;gap:8px;
+  display:flex;align-items:center;justify-content:center;gap:6px;
 }
 .btn-report:hover{opacity:.9}
 .btn-report:active{transform:scale(.98)}
+.btn-excel{
+  padding:14px 8px;
+  background:linear-gradient(135deg,#f7971e,#ffd200);
+  color:#7a4a00;border:none;border-radius:16px;
+  font-size:.95rem;font-weight:900;font-family:inherit;
+  cursor:pointer;letter-spacing:.5px;
+  box-shadow:0 5px 18px rgba(247,151,30,.3);
+  transition:opacity .2s,transform .1s;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.btn-excel:hover{opacity:.9}
+.btn-excel:active{transform:scale(.98)}
 
 .table-section{display:none}
 .table-section.open{display:block}
@@ -351,7 +365,10 @@ table.monthly .total-label{color:#c0392b;font-weight:900}
 
   <div class="dots">· · ·</div>
 
-  <button class="btn-report" id="btnReport" onclick="toggleTable()">📊 查看月報表</button>
+  <div class="action-btns">
+    <button class="btn-report" id="btnReport" onclick="toggleTable()">📊 查看月報表</button>
+    <button class="btn-excel" onclick="exportExcel()">📥 下載 Excel</button>
+  </div>
 
   <div class="table-section card" id="tableSection">
     <div class="table-wrap">
@@ -590,6 +607,66 @@ function renderTable(){
 <td>${tj%1?tj.toFixed(1):tj||''}</td>
 <td>${tf%1?tf.toFixed(1):tf||''}</td>`;
   tb.appendChild(tot);
+}
+
+function cs(opts){
+  const thin={style:'thin',color:{rgb:'999999'}};
+  const med={style:'medium',color:{rgb:'555555'}};
+  const outer=opts&&opts.outer;
+  return{
+    border:{top:outer?med:thin,bottom:outer?med:thin,left:outer?med:thin,right:outer?med:thin},
+    font:{name:'DFKai-SB',sz:opts&&opts.sz||12,bold:!!(opts&&opts.bold),color:{rgb:opts&&opts.color||'000000'}},
+    alignment:{vertical:'center',horizontal:opts&&opts.align||'center',wrapText:false},
+    fill:opts&&opts.bg?{fgColor:{rgb:opts.bg},patternType:'solid'}:{patternType:'none'}
+  };
+}
+
+function exportExcel(){
+  if(!window.XLSX){showToast('⏳ 載入中，請再試一次');return;}
+  const recs=getData().filter(r=>r.year===curYear&&r.month===curMonth);
+  const byDay={};recs.forEach(r=>{byDay[r.day]=r;});
+  const days=daysInMonth(curYear,curMonth);
+  const mn=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+
+  const rows=[];
+  // Header row
+  rows.push([
+    {v:'',s:cs()},
+    {v:'',s:cs({align:'left'})},
+    {v:'傑',s:cs({sz:16,bold:true,outer:true})},
+    {v:'峰',s:cs({sz:16,bold:true,outer:true})}
+  ]);
+  // Day rows
+  for(let d=1;d<=days;d++){
+    const r=byDay[d];
+    const j=r?(parseFloat(r.jieHours)||''):'';
+    const f=r?(parseFloat(r.fengHours)||''):'';
+    const loc=r?(r.location||''):'';
+    rows.push([
+      {v:d,  s:cs()},
+      {v:loc,s:cs({align:'left'})},
+      {v:j,  s:cs()},
+      {v:f,  s:cs()}
+    ]);
+  }
+  // 總計 row
+  const lastDataRow=days+1;
+  rows.push([
+    {v:'',s:cs({outer:true})},
+    {v:'總計',s:cs({bold:true,sz:14,color:'C0392B',align:'center',outer:true,bg:'FFF3F3'})},
+    {f:`SUM(C2:C${lastDataRow})`,s:cs({bold:true,outer:true,bg:'FFF3F3'})},
+    {f:`SUM(D2:D${lastDataRow})`,s:cs({bold:true,outer:true,bg:'FFF3F3'})}
+  ]);
+
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:6},{wch:38},{wch:10},{wch:10}];
+  ws['!rows']=[{hpx:30}];
+  for(let i=0;i<=days;i++) ws['!rows'].push({hpx:22});
+
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,`${curYear}年${mn[curMonth-1]}`);
+  XLSX.writeFile(wb,`${curYear}年${mn[curMonth-1]}記錄表.xlsx`);
+  showToast('📥 Excel 已下載！');
 }
 
 function renderAll(){
