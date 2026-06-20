@@ -387,6 +387,7 @@ table.monthly .total-label{color:#c0392b;font-weight:900}
   <a href="salary.html" class="btn-salary">💰 薪水計算</a>
 
   <div class="table-section card" id="tableSection">
+    <div class="card-title" id="tableMonthLabel" style="margin-bottom:12px">📅 月報表</div>
     <div class="table-wrap">
       <table class="monthly">
         <thead>
@@ -609,6 +610,7 @@ function toggleTable(){
 }
 
 function renderTable(){
+  document.getElementById('tableMonthLabel').textContent=`📅 ${curYear}年${curMonth}月 月報表`;
   const recs=getData().filter(r=>r.year===curYear&&r.month===curMonth);
   const byDay={};recs.forEach(r=>{byDay[r.day]=r;});
   const days=daysInMonth(curYear,curMonth);
