@@ -705,16 +705,17 @@ function exportExcel(){
 
   const ws=XLSX.utils.aoa_to_sheet(rows);
   ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:3}}];
-  // 欄寬：A小、B最寬、C/D窄
   ws['!cols']=[{wch:5},{wch:42},{wch:8},{wch:8}];
-  // 列高：標題高一些，資料列統一
-  const rowH=[{hpx:32},{hpx:24}];
-  for(let i=0;i<days;i++) rowH.push({hpx:17});
-  rowH.push({hpx:22});
+  // 動態列高：讓所有列加起來剛好填滿A4可列印高度
+  // A4 297mm - 上下各 0.55"(13.97mm) = 269mm → hpx ≈ 1016
+  const TARGET=1016, titleH=50, headH=36, totH=36;
+  const dataH=Math.round((TARGET-titleH-headH-totH)/days);
+  const rowH=[{hpx:titleH},{hpx:headH}];
+  for(let i=0;i<days;i++) rowH.push({hpx:dataH});
+  rowH.push({hpx:totH});
   ws['!rows']=rowH;
-  // A4直向，縮放至單頁
-  ws['!pageSetup']={paperSize:9,orientation:'portrait',scale:100,fitToPage:1,fitToWidth:1,fitToHeight:1};
-  ws['!margins']={left:0.39,right:0.39,top:0.55,bottom:0.55,header:0.2,footer:0.2};
+  ws['!pageSetup']={paperSize:9,orientation:'portrait',fitToPage:1,fitToWidth:1,fitToHeight:1};
+  ws['!margins']={left:0.39,right:0.39,top:0.55,bottom:0.55,header:0,footer:0};
 
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,`${curYear}年${monthName}`);
