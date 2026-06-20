@@ -115,6 +115,27 @@ body{
 }
 .btn-cancel-edit:hover{background:#eee}
 
+.quick-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.btn-quick{
+  padding:12px 8px;border:none;border-radius:14px;
+  font-size:.95rem;font-weight:900;font-family:inherit;
+  cursor:pointer;letter-spacing:1px;
+  transition:opacity .2s,transform .1s;
+}
+.btn-quick:active{transform:scale(.97)}
+.btn-leave{
+  background:linear-gradient(135deg,#ffb347,#ff6b35);
+  color:#fff;
+  box-shadow:0 4px 14px rgba(255,107,53,.35);
+}
+.btn-leave:hover{opacity:.88}
+.btn-nocall{
+  background:linear-gradient(135deg,#b0bec5,#78909c);
+  color:#fff;
+  box-shadow:0 4px 14px rgba(120,144,156,.3);
+}
+.btn-nocall:hover{opacity:.88}
+
 .edit-banner{
   background:linear-gradient(135deg,#fff8e1,#fff3e0);
   border:2px dashed #ffc107;border-radius:12px;
@@ -253,6 +274,10 @@ body{
 
       <button type="submit" class="btn-submit" id="submitBtn">✨ 新增</button>
       <button type="button" class="btn-cancel-edit" id="cancelBtn" onclick="cancelEdit()">✕ 取消編輯</button>
+      <div class="quick-btns">
+        <button type="button" class="btn-quick btn-leave" onclick="quickSave('請假')">🌴 請假</button>
+        <button type="button" class="btn-quick btn-nocall" onclick="quickSave('沒叫')">😴 沒叫</button>
+      </div>
     </form>
   </div>
 
@@ -327,15 +352,31 @@ function populateDaySelect(){
 
 function emoji(loc){
   if(!loc)return'📍';
-  const l=loc;
-  if(/家|home/i.test(l))return'🏠';
-  if(/廠|工廠|factory/i.test(l))return'🏭';
-  if(/辦公|office/i.test(l))return'🏢';
-  if(/台北|臺北/i.test(l))return'🌆';
-  if(/高雄/i.test(l))return'🌇';
-  if(/台中|臺中/i.test(l))return'🌃';
-  if(/外出|出差/i.test(l))return'🚗';
+  if(loc==='請假')return'🌴';
+  if(loc==='沒叫')return'😴';
+  if(/家|home/i.test(loc))return'🏠';
+  if(/廠|工廠|factory/i.test(loc))return'🏭';
+  if(/辦公|office/i.test(loc))return'🏢';
+  if(/台北|臺北/i.test(loc))return'🌆';
+  if(/高雄/i.test(loc))return'🌇';
+  if(/台中|臺中/i.test(loc))return'🌃';
+  if(/外出|出差/i.test(loc))return'🚗';
   return'📍';
+}
+
+function quickSave(status){
+  const day=+document.getElementById('inputDay').value;
+  const data=getData();
+  const ex=data.find(r=>r.year===curYear&&r.month===curMonth&&r.day===day);
+  if(ex){
+    if(!confirm(`${day} 日已有記錄，要改成「${status}」嗎？`))return;
+    data[data.indexOf(ex)]={...ex,location:status,jieHours:'',fengHours:''};
+  }else{
+    data.push({id:uid(),year:curYear,month:curMonth,day,location:status,jieHours:'',fengHours:''});
+  }
+  setData(data);
+  showToast(status==='請假'?'🌴 已記錄請假！':'😴 已記錄沒叫！');
+  renderAll();
 }
 
 function renderList(){
@@ -360,13 +401,21 @@ function renderList(){
   el.innerHTML=recs.map(r=>{
     const j=parseFloat(r.jieHours)||0;
     const f=parseFloat(r.fengHours)||0;
-    return`<div class="record-card">
-  <div class="rec-day">${r.day}</div>
+    const isLeave=r.location==='請假';
+    const isNocall=r.location==='沒叫';
+    const special=isLeave||isNocall;
+    const cardStyle=isLeave?'border-color:#ffcc80;background:#fff8f0':isNocall?'border-color:#cfd8dc;background:#f7f9fa':'';
+    const dayStyle=isLeave?'background:linear-gradient(135deg,#ffb347,#ff6b35)':isNocall?'background:linear-gradient(135deg,#b0bec5,#78909c)':'';
+    const statusTag=isLeave?'<span class="tag" style="background:#ffe0b2;color:#e65100">🌴 請假</span>'
+                  :isNocall?'<span class="tag" style="background:#eceff1;color:#546e7a">😴 沒叫</span>':'';
+    return`<div class="record-card" style="${cardStyle}">
+  <div class="rec-day" style="${dayStyle}">${r.day}</div>
   <div class="rec-info">
     <div class="rec-loc">${emoji(r.location)} ${esc(r.location||'（無地點）')}</div>
     <div class="rec-tags">
-      ${j?`<span class="tag tag-jie">傑 ${j}h</span>`:''}
-      ${f?`<span class="tag tag-feng">峰 ${f}h</span>`:''}
+      ${special?statusTag:''}
+      ${!special&&j?`<span class="tag tag-jie">傑 ${j}h</span>`:''}
+      ${!special&&f?`<span class="tag tag-feng">峰 ${f}h</span>`:''}
     </div>
   </div>
   <div class="rec-btns">
